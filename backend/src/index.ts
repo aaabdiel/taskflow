@@ -7,11 +7,10 @@ const app = express();
 const PORT = 3000;
 
 // Middlewares
-app.use(cors()); // Permite peticiones desde el frontend (que estará en otro puerto)
-app.use(express.json()); // Permite recibir datos en formato JSON
+app.use(cors());
+app.use(express.json());
 
 // --- VALIDACIÓN CON ZOD ---
-// Definimos cómo debe lucir una tarea cuando llega al servidor
 const TaskSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
   description: z.string().optional().nullable(),
@@ -21,20 +20,28 @@ const TaskSchema = z.object({
 
 // --- ENDPOINTS DE LA API ---
 
-// 1. GET /api/tasks - Listar todas las tareas (con filtro opcional por estado)
+// 1. GET /api/tasks - Listar tareas (con filtro por estado, prioridad y búsqueda)
 app.get('/api/tasks', (req, res) => {
   try {
-    const { status } = req.query;
-    let query = 'SELECT * FROM tasks';
+    const { status, search, priority } = req.query;
+    let query = 'SELECT * FROM tasks WHERE 1=1'; 
     const params: any[] = [];
 
-    // Si envían ?status=Pending, filtramos
     if (status) {
-      query += ' WHERE status = ?';
+      query += ' AND status = ?';
       params.push(status);
     }
 
-    // Ordenamos por fecha de creación descendente
+    if (priority) {
+      query += ' AND priority = ?';
+      params.push(priority);
+    }
+
+    if (search) {
+      query += ' AND title LIKE ?';
+      params.push(`%${search}%`);
+    }
+
     query += ' ORDER BY created_at DESC';
 
     const tasks = db.prepare(query).all(...params);
@@ -44,13 +51,11 @@ app.get('/api/tasks', (req, res) => {
   }
 });
 
-// 2. POST /api/tasks - Crear una nueva tarea
+// 2. POST /api/tasks - Crear una tarea
 app.post('/api/tasks', (req, res) => {
   try {
-    // Validamos los datos que llegan
     const validatedData = TaskSchema.parse(req.body);
 
-    // Insertamos en la base de datos
     const insert = db.prepare(
       'INSERT INTO tasks (title, description, status, priority) VALUES (?, ?, ?, ?)'
     );
@@ -58,11 +63,10 @@ app.post('/api/tasks', (req, res) => {
     const result = insert.run(
       validatedData.title,
       validatedData.description || null,
-      validatedData.status || 'Pending', // Por defecto
-      validatedData.priority || 'Medium' // Por defecto
+      validatedData.status || 'Pending',
+      validatedData.priority || 'Medium'
     );
 
-    // Devolvemos la tarea creada con su nuevo ID
     const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(newTask);
   } catch (error: any) {
@@ -73,19 +77,17 @@ app.post('/api/tasks', (req, res) => {
   }
 });
 
-// 3. PATCH /api/tasks/:id - Actualizar una tarea existente (título, estado, prioridad, etc)
+// 3. PATCH /api/tasks/:id - Actualizar tarea
 app.patch('/api/tasks/:id', (req, res) => {
   try {
     const id = req.params.id;
-    const validatedData = TaskSchema.partial().parse(req.body); // .partial() permite enviar solo algunos campos
+    const validatedData = TaskSchema.partial().parse(req.body);
 
-    // Verificamos si la tarea existe
     const existingTask: any = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
     if (!existingTask) {
       return res.status(404).json({ error: 'Tarea no encontrada' });
     }
 
-    // Actualizamos solo los campos que llegaron
     const updates = [];
     const values = [];
     for (const [key, value] of Object.entries(validatedData)) {
@@ -102,7 +104,6 @@ app.patch('/api/tasks/:id', (req, res) => {
     values.push(id);
     db.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
-    // Devolvemos la tarea actualizada
     const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
     res.json(updatedTask);
   } catch (error: any) {
@@ -113,7 +114,7 @@ app.patch('/api/tasks/:id', (req, res) => {
   }
 });
 
-// 4. DELETE /api/tasks/:id - Eliminar una tarea
+// 4. DELETE /api/tasks/:id - Eliminar tarea
 app.delete('/api/tasks/:id', (req, res) => {
   try {
     const id = req.params.id;
@@ -123,13 +124,17 @@ app.delete('/api/tasks/:id', (req, res) => {
       return res.status(404).json({ error: 'Tarea no encontrada' });
     }
 
-    res.status(204).send(); // 204 significa "Éxito, sin contenido que devolver"
+    res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Error interno del servidor al eliminar la tarea' });
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor TaskFlow corriendo en http://localhost:${PORT}`);
-});
+// Iniciar servidor (solo si no estamos en modo test)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor TaskFlow corriendo en http://localhost:${PORT}`);
+  });
+}
+
+export default app;

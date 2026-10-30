@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-// Tipos de datos
 type Task = {
   id: number;
   title: string;
@@ -14,19 +13,26 @@ const API_URL = 'http://localhost:3000/api/tasks';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<string>('');
   
-  // Estados del formulario
+  // Filtros
+  const [filter, setFilter] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [search, setSearch] = useState<string>(''); 
+  
+  // Formulario
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [status, setStatus] = useState('Pending');
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Cargar tareas
   const fetchTasks = async () => {
     try {
-      const url = filter ? `${API_URL}?status=${filter}` : API_URL;
+      let url = `${API_URL}?`;
+      if (filter) url += `status=${filter}&`;
+      if (priorityFilter) url += `priority=${priorityFilter}&`;
+      if (search) url += `search=${search}`;
+
       const res = await fetch(url);
       const data = await res.json();
       setTasks(data);
@@ -37,9 +43,8 @@ export default function App() {
 
   useEffect(() => {
     fetchTasks();
-  }, [filter]); // Se recarga cuando cambia el filtro
+  }, [filter, priorityFilter, search]);
 
-  // Guardar (Crear o Editar)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return alert('El título es obligatorio');
@@ -48,14 +53,12 @@ export default function App() {
     
     try {
       if (editingId) {
-        // Editar
         await fetch(`${API_URL}/${editingId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(taskData)
         });
       } else {
-        // Crear
         await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,14 +72,12 @@ export default function App() {
     }
   };
 
-  // Eliminar
   const handleDelete = async (id: number) => {
     if (!confirm('¿Seguro que quieres eliminar esta tarea?')) return;
     await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
     fetchTasks();
   };
 
-  // Preparar edición
   const handleEdit = (task: Task) => {
     setTitle(task.title);
     setDescription(task.description || '');
@@ -93,6 +94,14 @@ export default function App() {
     setEditingId(null);
   };
 
+  // Cálculo de estadísticas
+  const stats = {
+    total: tasks.length,
+    pending: tasks.filter(t => t.status === 'Pending').length,
+    inProgress: tasks.filter(t => t.status === 'In Progress').length,
+    completed: tasks.filter(t => t.status === 'Completed').length,
+  };
+
   return (
     <div className="container">
       <header>
@@ -100,8 +109,15 @@ export default function App() {
         <p>Gestor de tareas para el equipo</p>
       </header>
 
+      {/* PANEL DE ESTADÍSTICAS */}
+      <section className="stats-panel">
+        <div className="stat-card"><span>Total:</span> <strong>{stats.total}</strong></div>
+        <div className="stat-card pending-stat"><span>Pendientes:</span> <strong>{stats.pending}</strong></div>
+        <div className="stat-card progress-stat"><span>En Progreso:</span> <strong>{stats.inProgress}</strong></div>
+        <div className="stat-card completed-stat"><span>Completadas:</span> <strong>{stats.completed}</strong></div>
+      </section>
+
       <main className="layout">
-        {/* Formulario */}
         <section className="card form-section">
           <h2>{editingId ? 'Editar Tarea' : 'Nueva Tarea'}</h2>
           <form onSubmit={handleSubmit}>
@@ -144,16 +160,30 @@ export default function App() {
           </form>
         </section>
 
-        {/* Lista de Tareas */}
         <section className="tasks-section">
           <div className="list-header">
             <h2>Tareas</h2>
-            <select value={filter} onChange={e => setFilter(e.target.value)} className="filter">
-              <option value="">Todas</option>
-              <option value="Pending">Pendientes</option>
-              <option value="In Progress">En Progreso</option>
-              <option value="Completed">Completadas</option>
-            </select>
+            <div className="filters-container">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="search-input"
+              />
+              <select value={filter} onChange={e => setFilter(e.target.value)} className="filter">
+                <option value="">Estado (Todas)</option>
+                <option value="Pending">Pendientes</option>
+                <option value="In Progress">En Progreso</option>
+                <option value="Completed">Completadas</option>
+              </select>
+              <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)} className="filter">
+                <option value="">Prioridad (Todas)</option>
+                <option value="High">Alta</option>
+                <option value="Medium">Media</option>
+                <option value="Low">Baja</option>
+              </select>
+            </div>
           </div>
 
           <div className="task-list">
