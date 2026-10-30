@@ -166,7 +166,7 @@ export default function App() {
             <div className="filters-container">
               <input 
                 type="text" 
-                placeholder="🔍 Buscar..." 
+                placeholder="Buscar..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="search-input"
