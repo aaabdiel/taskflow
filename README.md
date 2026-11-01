@@ -1,132 +1,154 @@
-\# TaskFlow - MVP Gestor de Tareas
-
-
+# TaskFlow - MVP Gestor de Tareas
 
 Aplicación web Full Stack desarrollada para administrar las tareas de un equipo, reemplazando el uso de hojas de cálculo por una interfaz moderna, rápida y con persistencia de datos.
 
+## Alcance del Proyecto
 
+*Dentro del alcance (In-Scope):* 
 
-\## Alcance del Proyecto
+- CRUD completo de tareas (Crear, Leer, Actualizar, Eliminar).
 
+- Interfaz web responsive con validaciones básicas.
 
+- Filtros combinables por estado, prioridad y búsqueda por título.
 
-\*\*Dentro del alcance (In-Scope):\*\*
+- Panel de estadísticas (Dashboard) en tiempo real.
 
-\- CRUD completo de tareas (Crear, Leer, Actualizar, Eliminar).
+- Backend con API REST, validación de datos y manejo de errores HTTP.
 
-\- Interfaz web responsive con validaciones básicas.
+- Base de datos relacional persistente (SQLite).
 
-\- Filtros combinables por estado, prioridad y búsqueda por título.
+- Pruebas automatizadas para los endpoints principales.
 
-\- Panel de estadísticas (Dashboard) en tiempo real.
 
-\- Backend con API REST, validación de datos y manejo de errores HTTP.
+*Fuera del alcance (Out-of-Scope)*
 
-\- Base de datos relacional persistente (SQLite).
+- *Autenticación y Autorización:* No se implementaron usuarios ni roles (login/registro) para mantener el enfoque en la funcionalidad principal solicitada.
 
-\- Pruebas automatizadas para los endpoints principales.
+- *Paginación:* El listado devuelve todas las tareas, ideal para un equipo pequeño.
 
+- *Despliegue en la nube:* La aplicación está diseñada para ejecutarse localmente.
 
+## Funcionalidades
 
-\*\*Fuera del alcance (Out-of-Scope) - \*Decisiones conscientes para el MVP\*:\*\*
+**Completadas**
+- [x] Listar, crear, editar y eliminar tareas
+- [x] Estados Pending / In Progress / Completed
+- [x] Filtros por estado y prioridad
+- [x] Búsqueda por título (opcional)
+- [x] Panel de estadísticas (opcional)
+- [x] Validación en frontend y backend (Zod)
+- [x] Pruebas automatizadas de listado y creación
 
-\- \*\*Autenticación y Autorización:\*\* No se implementaron usuarios ni roles (login/registro) para mantener el enfoque en la funcionalidad principal solicitada.
+**Mejoras futuras**
+- [ ] Pruebas de PATCH y DELETE, con base de datos aislada para tests
+- [ ] Estadísticas globales independientes de los filtros
+- [ ] Cambiar el estado directamente desde la tarjeta
+- [ ] Debounce en el buscador
+- [ ] Paginación, autenticación y despliegue
 
-\- \*\*Paginación:\*\* El listado devuelve todas las tareas, ideal para un equipo pequeño.
+      
+## Casos de Uso Principales
 
-\- \*\*Despliegue en la nube:\*\* La aplicación está diseñada para ejecutarse localmente.
+1. *Gestión de Tareas (CRUD):*
 
+  - *Como usuario, quiero* crear una tarea con título, descripción, prioridad y estado, *para* registrar nuevas actividades.
 
+  - *Como usuario, quiero* editar los detalles de una tarea existente, *para* corregir o actualizar su información.
 
-\## Casos de Uso Principales
+ - *Como usuario, quiero* eliminar tareas que ya no son necesarias, *para* mantener el tablero limpio.
 
+2. *Seguimiento de Progreso:*
 
+ - *Como usuario, quiero* cambiar el estado de una tarea (Pending, In Progress, Completed), *para* reflejar su avance real.
 
-1\. \*\*Gestión de Tareas (CRUD):\*\*
+3. *Visualización y Búsqueda:*
 
-&#x20;  - \*Como usuario, quiero\* crear una tarea con título, descripción, prioridad y estado, \*para\* registrar nuevas actividades.
+  - *Como usuario, quiero* filtrar las tareas por estado y prioridad, *para* enfocarme en lo que es urgente.
 
-&#x20;  - \*Como usuario, quiero\* editar los detalles de una tarea existente, \*para\* corregir o actualizar su información.
+  - *Como usuario, quiero* buscar tareas por su título, *para* encontrar información específica rápidamente.
 
-&#x20;  - \*Como usuario, quiero\* eliminar tareas que ya no son necesarias, \*para\* mantener el tablero limpio.
+ - *Como usuario, quiero* ver un resumen estadístico, *para* conocer de un vistazo la carga de trabajo del equipo.
 
-2\. \*\*Seguimiento de Progreso:\*\*
+## API
 
-&#x20;  - \*Como usuario, quiero\* cambiar el estado de una tarea (Pending, In Progress, Completed), \*para\* reflejar su avance real.
+| Método | Ruta | Descripción | Respuestas |
+|--------|------|-------------|------------|
+| GET | `/api/tasks?status=&priority=&search=` | Lista tareas (filtros opcionales) | 200 |
+| POST | `/api/tasks` | Crea una tarea | 201, 400 |
+| PATCH | `/api/tasks/:id` | Actualiza campos de una tarea | 200, 400, 404 |
+| DELETE | `/api/tasks/:id` | Elimina una tarea | 204, 404 |
 
-3\. \*\*Visualización y Búsqueda:\*\*
+## Base de datos
 
-&#x20;  - \*Como usuario, quiero\* filtrar las tareas por estado y prioridad, \*para\* enfocarme en lo que es urgente.
+```sql
+CREATE TABLE IF NOT EXISTS tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'Pending',
+  priority TEXT NOT NULL DEFAULT 'Medium',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+El archivo `backend/tasks.db` se crea solo al iniciar el servidor por primera vez.
 
-&#x20;  - \*Como usuario, quiero\* buscar tareas por su título, \*para\* encontrar información específica rápidamente.
 
-&#x20;  - \*Como usuario, quiero\* ver un resumen estadístico, \*para\* conocer de un vistazo la carga de trabajo del equipo.
+## Tecnologías Utilizadas
 
+- *Frontend:* React, Vite, TypeScript, CSS puro.
 
+- *Backend:* Node.js, Express, TypeScript.
 
-\## Tecnologías Utilizadas
+- *Base de Datos:* SQLite (módulo nativo `node:sqlite`).
 
+- *Validación:* Zod.
 
+- *Pruebas:* Vitest + Supertest.
 
-\- \*\*Frontend:\*\* React, Vite, TypeScript, CSS puro.
 
-\- \*\*Backend:\*\* Node.js, Express, TypeScript.
 
-\- \*\*Base de Datos:\*\* SQLite (módulo nativo `node:sqlite`).
+## Decisiones técnicas
 
-\- \*\*Validación:\*\* Zod.
+Usé React + Vite + TypeScript en el frontend con `useState`/`useEffect`, sin librerías de estado, porque para un MVP de una sola vista Redux sería sobreingeniería. El backend es una API REST con Express y TypeScript; elegí `PATCH` para las actualizaciones parciales y valido toda entrada con Zod, que responde 400 ante datos inválidos antes de tocar la base de datos. Para la persistencia usé SQLite con el módulo nativo `node:sqlite` (Node 22.13+), que evita compilar módulos en C++ en Windows, y todas las consultas son parametrizadas para prevenir inyección SQL; al ser un módulo experimental, en producción migraría a PostgreSQL o `better-sqlite3`. Las pruebas usan Vitest + Supertest sobre la API.
 
-\- \*\*Pruebas:\*\* Vitest + Supertest.
+ ##  Uso de Inteligencia Artificial
 
+Durante el desarrollo de este MVP, utilicé herramientas de IA (principalmente Claude y DeepSeek) como un asistente de consulta y pair-programming. Empecé el proyecto por mi cuenta, definiendo el alcance y la estructura general, y usé IA como apoyo durante el desarrollo: DeepSeek para programar partes del código, resolver errores y Claude para revisar el código ya terminado y detectar debilidades.
 
+**Nota:** Aunque la IA me proporcionó sugerencias, bases de código y soluciones a errores, todo el código fue revisado, adaptado y probado por mí. 
 
-\## Decisiones Técnicas Detalladas
+## Cómo instalar y ejecutar 
 
+El proyecto está dividido en dos carpetas: `backend` y `frontend`. Necesitarás *dos terminales* abiertas y tener instalado  Node.js (v22.13 o superior).
 
-
-\- \*\*¿Por qué `node:sqlite` y no `better-sqlite3`?\*\*
-
-&#x20; Se eligió el módulo nativo incluido en Node.js (versión 22+) para evitar la compilación de código C++ en Windows (que requiere Visual Studio Build Tools y suele fallar en entornos limpios). Esto hace que el proyecto sea 100% portable y fácil de instalar. Al ser un solo archivo (`tasks.db`), garantiza persistencia real.
-
-\- \*\*¿Por qué Zod para validación?\*\*
-
-&#x20; Zod permite definir un "esquema de verdad" en el backend. Si el frontend envía datos corruptos (ej. un título vacío o un estado no permitido), Zod intercepta la petición y el backend responde con un HTTP 400 controlado, evitando que la base de datos se ensucie.
-
-\- \*\*¿Por qué React + Vite?\*\*
-
-&#x20; Vite ofrece un entorno de desarrollo instantáneo. Se usó el estado nativo de React (`useState`, `useEffect`) en lugar de herramientas como Redux, ya que para el tamaño de este MVP, Redux sería sobre-ingeniería.
-
-\- \*\*¿Por qué Vitest + Supertest?\*\*
-
-&#x20; Para garantizar la calidad del código sin necesidad de hacer pruebas manuales en el navegador cada vez que se modifica algo. Se prueban los "caminos felices" (creación exitosa) y los "caminos de error" (validación de Zod).
-
-
-
-\## Cómo instalar y ejecutar (Paso a Paso)
-
-
-
-El proyecto está dividido en dos carpetas: `backend` y `frontend`. Necesitarás \*\*dos terminales\*\* abiertas y tener instalado \*\*Node.js (v22 o superior)\*\*.
-
-
-
-\### Terminal 1: Backend
+### Terminal 1: Backend
 
 ```bash
-
-\# 1. Entrar a la carpeta del backend
-
+# 1. Entrar a la carpeta del backend
 cd backend
-
-
-
-\# 2. Instalar dependencias
-
+# 2. Instalar dependencias
 npm install
-
-
-
-\# 3. Iniciar el servidor (se ejecutará en http://localhost:3000)
-
+# 3. Iniciar el servidor (se ejecutará en http://localhost:3000)
 npm run dev
+```
 
+### Terminal 2: Frontend
+```bash
+# 1. Entrar a la carpeta del frontend
+cd frontend
+# 2. Instalar dependencias
+npm install
+# 3. Iniciar la interfaz (se ejecutará en http://localhost:5173)
+npm run dev
+```
+
+### Pruebas
+
+```bash
+cd backend
+npm test
+```
+
+## Video de demostración
+[Link]
