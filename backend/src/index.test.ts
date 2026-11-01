@@ -27,4 +27,11 @@ describe('API TaskFlow', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Datos inválidos');
   });
+
+  it('Debería devolver estadísticas globales coherentes (GET /api/tasks/stats)', async () => {
+    const res = await request(app).get('/api/tasks/stats');
+    expect(res.status).toBe(200);
+    const { total, pending, inProgress, completed } = res.body;
+    expect(total).toBe(pending + inProgress + completed);
+  });
 });

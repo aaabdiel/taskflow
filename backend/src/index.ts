@@ -51,6 +51,26 @@ app.get('/api/tasks', (req, res) => {
   }
 });
 
+// GET /api/tasks/stats - Estadísticas globales (independientes de los filtros)
+app.get('/api/tasks/stats', (req, res) => {
+  try {
+    const rows = db
+      .prepare('SELECT status, COUNT(*) AS count FROM tasks GROUP BY status')
+      .all() as { status: string; count: number }[];
+
+    const stats = { total: 0, pending: 0, inProgress: 0, completed: 0 };
+    for (const row of rows) {
+      stats.total += row.count;
+      if (row.status === 'Pending') stats.pending = row.count;
+      if (row.status === 'In Progress') stats.inProgress = row.count;
+      if (row.status === 'Completed') stats.completed = row.count;
+    }
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno del servidor al obtener las estadísticas' });
+  }
+});
+
 // 2. POST /api/tasks - Crear una tarea
 app.post('/api/tasks', (req, res) => {
   try {

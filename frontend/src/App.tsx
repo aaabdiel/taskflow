@@ -9,10 +9,18 @@ type Task = {
   created_at: string;
 };
 
+type Stats = {
+  total: number;
+  pending: number;
+  inProgress: number;
+  completed: number;
+};
+
 const API_URL = 'http://localhost:3000/api/tasks';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, inProgress: 0, completed: 0 });
   
   // Filtros
   const [filter, setFilter] = useState<string>('');
@@ -45,6 +53,20 @@ export default function App() {
     fetchTasks();
   }, [filter, priorityFilter, search]);
 
+  // Estadísticas globales (no dependen de los filtros)
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_URL}/stats`);
+      setStats(await res.json());
+    } catch (error) {
+      console.error('Error cargando estadísticas', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return alert('El título es obligatorio');
@@ -67,6 +89,7 @@ export default function App() {
       }
       resetForm();
       fetchTasks();
+      fetchStats();
     } catch (error) {
       alert('Error al guardar la tarea');
     }
@@ -76,6 +99,7 @@ export default function App() {
     if (!confirm('¿Seguro que quieres eliminar esta tarea?')) return;
     await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
     fetchTasks();
+    fetchStats();
   };
 
   const handleEdit = (task: Task) => {
@@ -92,14 +116,6 @@ export default function App() {
     setPriority('Medium');
     setStatus('Pending');
     setEditingId(null);
-  };
-
-  // Cálculo de estadísticas
-  const stats = {
-    total: tasks.length,
-    pending: tasks.filter(t => t.status === 'Pending').length,
-    inProgress: tasks.filter(t => t.status === 'In Progress').length,
-    completed: tasks.filter(t => t.status === 'Completed').length,
   };
 
   return (
